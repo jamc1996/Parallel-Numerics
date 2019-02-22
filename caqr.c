@@ -8,6 +8,8 @@
 #include <mpi.h>
 
 void Apply_QT(DenseMatrix* B,DenseMatrix* Q)
+/* Function to apply a Q^T as calculated for block nxb to each 
+other block of a matrix*/
 {
 	int i,j;
 	for (i=0; i<B->nColumns;i++)

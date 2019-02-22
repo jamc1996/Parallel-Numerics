@@ -10,52 +10,46 @@
 #include "caqr.h"
 
 int main(int argc, char* argv[])
+/* Main function for testing the efficiency of parallel qr decomposition. */
 {
 	int myid, nprocs;
 
 	int b = 4;
 	int n = 200;
-	int i,j;
 	int m = 20;
 
-	DenseMatrix A = CreateNullMatrix(n,b);
-	DenseMatrix Rf = CreateNullMatrix(n,b);
-	DenseMatrix Qf = CreateNullMatrix(n,b); 	
+	int i,j;
 
-	DenseMatrix A2 = CreateNullMatrix(n,m);
-	DenseMatrix Rf2 = CreateNullMatrix(n,m);
-	DenseMatrix Qf2 = CreateNullMatrix(n,m); 	
+	DenseMatrix Ab = CreateNullMatrix(n,b);
+	DenseMatrix Rb = CreateNullMatrix(n,b);
+	DenseMatrix Qb = CreateNullMatrix(n,b); 	
+
+	DenseMatrix Am = CreateNullMatrix(n,m);
+	DenseMatrix Rm = CreateNullMatrix(n,m);
+	DenseMatrix Qm = CreateNullMatrix(n,m); 	
 
 	MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
 	if (myid == 0){
-		SetToRandom(&A);
-		SetToRandom(&A2);
+		SetToRandom(&Ab);
+		SetToRandom(&Am);
 	}
 	
- 	MPI_Bcast(A.data_, n*b, MPI_DOUBLE, 0,MPI_COMM_WORLD);
- 	MPI_Bcast(A2.data_, n*m, MPI_DOUBLE, 0,MPI_COMM_WORLD);
-	//tsqr(&A, &Rf, &Qf, nprocs, myid, b);
-	memcpy(Rf2.data_,A2.data_,sizeof(double)*n*m);
-		
+ 	MPI_Bcast(Ab.data_, n*b, MPI_DOUBLE, 0,MPI_COMM_WORLD);
+ 	MPI_Bcast(Am.data_, n*m, MPI_DOUBLE, 0,MPI_COMM_WORLD);
+	
+	memcpy(Rb.data_,Ab.data_,sizeof(double)*n*b);
+	tsqr(&Rb, &Qb, nprocs, myid, b);
 
-/*	if(myid == 0){printf("Rr[0][%d] = %lf\n",0,Rf2.entry[0][0]);
-		for (i=0;i< 15;i++){
-			for (j=0; j< 15; j++){
-				printf("  %lf  ",A2.entry[j][i]);
-			} printf("\n");}
-	}*/
-
-	caqr(&Rf2, &Qf2, nprocs, myid, b);
+	//memcpy(Rm.data_,Am.data_,sizeof(double)*n*m);
+	//caqr(&Rm, &Qm, nprocs, myid, b);
 	
 	//Find Qt A
 	
 
-	if (myid == 2){
-		DenseMatrix Rr = CreateNullMatrix(n,m);
-		DenseMatrix V = CreateNullMatrix(n,m);
+/*	if (myid == 2){
 		hhorth(&A2,&V,&Rr);
 		sleep(1);
 
@@ -64,8 +58,14 @@ int main(int argc, char* argv[])
 			for (j=0; j< 15; j++){
 				printf("  %lf  ",Rr.entry[j][i]);
 			}printf("\n");}
-	}
-	FreeMatrix(&A2);
+	}*/
+
+	FreeMatrix(&Ab);
+	FreeMatrix(&Rb);
+	FreeMatrix(&Qb);
+	FreeMatrix(&Am);
+	FreeMatrix(&Rm);
+	FreeMatrix(&Qm);
 
 	MPI_Finalize();
 

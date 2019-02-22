@@ -56,24 +56,21 @@ void QtA(DenseMatrix Q[],DenseMatrix* B, DenseMatrix *W, int myid, int comm_step
 		}
 		//break;
 	}
-	if (myid == 0){
-		PrintMatrix(B);
-	}
-	
+
 
 }
 
-void tsqr(DenseMatrix* A, DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
+void tsqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
 {
 	int s,e;
 	int i,k;
 
 	//Each processor takes it's chunk of matrix.
-	decomp1d(0, A->nRows, nprocs, myid, &s, &e);
+	decomp1d(0, Rfin->nRows, nprocs, myid, &s, &e);
 	DenseMatrix W = CreateNullMatrix(1+e-s,b);
 	for (i=0; i<b; i++)
 	{
-		memcpy(W.entry[i],&A->entry[i][s],sizeof(double)*(1+e-s));
+		memcpy(W.entry[i],&Rfin->entry[i][s],sizeof(double)*(1+e-s));
 	}
 
 
@@ -114,20 +111,21 @@ void tsqr(DenseMatrix* A, DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int 
 	DenseMatrix B;
 	B = CreateNullMatrix(1+e-s,b);
 	QtA(Q, &B, &W, myid, comm_steps, mylevel, b);
-	/*if (myid == 0)
+	if (myid == 0)
 	{
 		for ( i=0; i<b; i++ )
 		{
-			memcpy(Rfin->entry[i],R[mylevel].entry[i],sizeof(double)*R[mylevel].nRows);
+			//memcpy(Rfin->entry[i],R[mylevel].entry[i],sizeof(double)*R[mylevel].nRows);
 		}
 	}
 	else
 	{
 		for (i=0; i<b; i++)
 		{
-			memset(&Rfin->entry[i][s],0.0,sizeof(double)*(1+e-s));
+			//memset(&Rfin->entry[i][s],0.0,sizeof(double)*(1+e-s));
 		}
-	}*/
+	}
+//	if (myid ==0){PrintMatrix(Rfin);}
 }
 
 
