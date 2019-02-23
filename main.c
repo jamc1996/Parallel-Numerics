@@ -44,8 +44,12 @@ int main(int argc, char* argv[])
  	MPI_Bcast(Ab.data_, n*b, MPI_DOUBLE, 0,MPI_COMM_WORLD);
  	MPI_Bcast(Am.data_, n*m, MPI_DOUBLE, 0,MPI_COMM_WORLD);
 
-	memcpy(Rb.data_,Ab.data_,sizeof(double)*n*b);
-	tsqr(&Rb, &Qb, nprocs, myid, b);
+	run_test(n, m, b, nprocs, myid, MPI_COMM_WORLD);
+
+
+
+	//memcpy(Rb.data_,Ab.data_,sizeof(double)*n*b);
+	//tsqr(&Rb, &Qb, nprocs, myid, b);
 
 	//memcpy(Rm.data_,Am.data_,sizeof(double)*n*m);
 	//caqr(&Rm, &Qm, nprocs, myid, b);
@@ -79,6 +83,8 @@ int main(int argc, char* argv[])
 
 void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm)
 {
+	clock_t start, end;
+	double time;
 	DenseMatrix A = CreateNullMatrix(n,m);
 	DenseMatrix R = CreateNullMatrix(n,m);
 	DenseMatrix Q = CreateNullMatrix(n,m);
@@ -94,7 +100,7 @@ void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm)
 	MPI_Barrier(comm);
 	if (myid == 0)
 	{
-		clock_t start = clock();
+		start = clock();
 	}
 
 	caqr(&R, &Q, nprocs, myid, b);
@@ -102,8 +108,8 @@ void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm)
 	MPI_Barrier(comm);
 	if (myid == 0)
 	{
-		clock_t end = clock();
-		double time = ((double) (end - start)) / CLOCKS_PER_SEC;
+		end = clock();
+		time = ((double) (end - start)) / CLOCKS_PER_SEC;
 		printf("\nOn %d processors, communication avoiding qr factorization of a %d x %d matrix, took %lf seconds.\n\n",nprocs, n, m, time);
 	}
 
