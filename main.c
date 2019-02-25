@@ -10,7 +10,7 @@
 #include "tsqr.h"
 #include "caqr.h"
 
-void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm);
+void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm, int nbrup, int nbrdown);
 
 
 int main(int argc, char* argv[])
@@ -18,62 +18,29 @@ int main(int argc, char* argv[])
 {
 	int myid, nprocs;
 
-	int b = 4;
-	int n = 200;
-	int m = 20;
-
-	int i,j;
-
-	DenseMatrix Ab = CreateNullMatrix(n,b);
-	DenseMatrix Rb = CreateNullMatrix(n,b);
-	DenseMatrix Qb = CreateNullMatrix(n,b);
-
-	DenseMatrix Am = CreateNullMatrix(n,m);
-	DenseMatrix Rm = CreateNullMatrix(n,m);
-	DenseMatrix Qm = CreateNullMatrix(n,m);
+	MPI_Comm cartcomm;												// Variables for the Cartesian topology
+	int ndims, dims[1], periods[1], reorder;
+	int nbrdown, nbrup;
+	int b = 50;
+	int n = 10000;
+	int m = 5000;
 
 	MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-	if (myid == 0){
-		SetToRandom(&Ab);
-		SetToRandom(&Am);
-	}
+	// Values set for 2d Cartesian topology:
+	ndims      = 1;
+  dims[0]    = nprocs;
+  periods[0] = 0;
+  reorder    = 0;
 
- 	MPI_Bcast(Ab.data_, n*b, MPI_DOUBLE, 0,MPI_COMM_WORLD);
- 	MPI_Bcast(Am.data_, n*m, MPI_DOUBLE, 0,MPI_COMM_WORLD);
+	// cartesuab communicator created:
+  MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, reorder, &cartcomm);
+  MPI_Cart_shift(cartcomm, 0, 1, &nbrup, &nbrdown);
 
-	run_test(n, m, b, nprocs, myid, MPI_COMM_WORLD);
+	run_test(n, m, b, nprocs, myid, cartcomm, nbrup, nbrdown);
 
-
-
-	//memcpy(Rb.data_,Ab.data_,sizeof(double)*n*b);
-	//tsqr(&Rb, &Qb, nprocs, myid, b);
-
-	//memcpy(Rm.data_,Am.data_,sizeof(double)*n*m);
-	//caqr(&Rm, &Qm, nprocs, myid, b);
-
-	//Find Qt A
-
-
-/*	if (myid == 2){
-		hhorth(&A2,&V,&Rr);
-		sleep(1);
-
-		printf("Rr[0][%d] = %lf\n",0,Rr.entry[0][0]);
-		for (i=0;i< 15;i++){
-			for (j=0; j< 15; j++){
-				printf("  %lf  ",Rr.entry[j][i]);
-			}printf("\n");}
-	}*/
-
-	FreeMatrix(&Ab);
-	FreeMatrix(&Rb);
-	FreeMatrix(&Qb);
-	FreeMatrix(&Am);
-	FreeMatrix(&Rm);
-	FreeMatrix(&Qm);
 
 	MPI_Finalize();
 
@@ -81,19 +48,20 @@ int main(int argc, char* argv[])
 }
 
 
-void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm)
+void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm, int nbrup, int nbrdown)
+/*Function to run the communication avoiding tall skinny qr factorization*/
 {
 	clock_t start, end;
 	double time;
+
 	DenseMatrix A = CreateNullMatrix(n,m);
 	DenseMatrix R = CreateNullMatrix(n,m);
-	DenseMatrix Q = CreateNullMatrix(n,m);
 
 	if (myid == 0){
 		SetToRandom(&A);
 	}
 
- 	MPI_Bcast(A.data_, n*m, MPI_DOUBLE, 0,MPI_COMM_WORLD);
+ 	MPI_Bcast(A.data_, n*m, MPI_DOUBLE, 0, comm);
 
 	memcpy(R.data_,A.data_,sizeof(double)*n*m);
 
@@ -103,7 +71,7 @@ void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm)
 		start = clock();
 	}
 
-	caqr(&R, &Q, nprocs, myid, b);
+	caqr(&R, nprocs, myid, b, comm, nbrup, nbrdown);
 
 	MPI_Barrier(comm);
 	if (myid == 0)
@@ -116,5 +84,5 @@ void run_test(int n, int m, int b, int nprocs, int myid, MPI_Comm comm)
 
 	FreeMatrix(&A);
 	FreeMatrix(&R);
-	FreeMatrix(&Q);
+
 }
