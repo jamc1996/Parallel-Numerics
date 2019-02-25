@@ -7,18 +7,17 @@
 
 #include <mpi.h>
 
-void caqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b, MPI_Comm comm, int nbrup, int nbrdown)
+void caqr(DenseMatrix* Rfin, int nprocs, int myid, int b, MPI_Comm comm, int nbrup, int nbrdown)
 /* Function to apply communication avoiding qr factorization to a matrix stored
 in Rfin across nprocs number of processors. The values of Rfin will be updated
 with the values of R for the R factorization. */
 {
 	int s,e;
 	int i,j,k,p;
-
+	
 	//Calculation of how far into communication step the processor must go:
 	int comm_steps = int_log2(nprocs);
 	int mylevel = my_steps(nprocs, myid, comm_steps);
-
 
 	MPI_Datatype row;
 	MPI_Type_vector(Rfin->nColumns, 1, Rfin->nColumns, MPI_DOUBLE, &row);
@@ -31,6 +30,7 @@ with the values of R for the R factorization. */
 
 	for(j=0; j<Rfin->nColumns/b; j++)
 	{
+
 		//Each processor takes it's chunk of matrix.
 		decomp1d(j*b, Rfin->nRows, nprocs, myid, &s, &e);
 
@@ -99,9 +99,8 @@ with the values of R for the R factorization. */
 		// Needs to be changed, at the moment exchanges all updates of Rfin,
 		// Should only do necessary ones.
 
-		for (p=0;p<b/nprocs;p++){
-				MPI_Sendrecv(&Rfin->entry[0][s+p], 1, row, nbrup, 0, &Rfin->entry[0][e+p], 1, row, nbrdown, 0, comm, MPI_STATUS_IGNORE);
-
+		for (p=0;p<(b/nprocs)+(nprocs);p++){
+				MPI_Sendrecv(&Rfin->entry[0][s+p], 1, row, nbrup, 0, &Rfin->entry[0][e+1+p], 1, row, nbrdown, 0, comm, MPI_STATUS_IGNORE);
 		}
 
 		// The last dynamically allocated memory freed before finish of iteration.
