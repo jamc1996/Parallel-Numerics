@@ -8,58 +8,6 @@
 #include "dense.h"
 #include "tsqr.h"
 
-
-
-void QtA(DenseMatrix Q[],DenseMatrix* B, DenseMatrix *W, int myid, int comm_steps, int mylevel, int b)
-{
-	
-	int i,k;
-	ApplyQT(B,&Q[0],W);
-	
-	
-	DenseMatrix Bbar = CreateNullMatrix(2*b,b);
-	for ( i=0;i<b;i++)
-	{
-		memcpy(Bbar.entry[i],B->entry[i],sizeof(double)*b);
-	}
-	
-	for (k=1; k<=comm_steps; k++ )
-	{
-		if (k < mylevel)
-		{
-			for(i=0;i<b;i++)
-			{
-				//printf("My id is %d, k is %d and i is %d\n",myid,k,i);
-				MPI_Recv(&Bbar.entry[i][b], b, MPI_DOUBLE, myid+int_pow(2,k-1), 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			}
-			ApplyQT(&Bbar,&Q[k],&Bbar);			
-			for(i=0;i<b;i++)
-			{
-				//printf("My id is %d, k is %d and i is %d\n",myid,k,i);
-				MPI_Send(&Bbar.entry[i][b], b, MPI_DOUBLE, myid+int_pow(2,k-1), 8, MPI_COMM_WORLD);
-				memcpy(B->entry[i],Bbar.entry[i],sizeof(double)*b);
-			}
-		}
-		else if (k == mylevel)
-		{
-			for(i=0;i<b;i++)
-			{
-				//printf("My id is %d, k is %d and i is %d\n",myid,k,i);
-				MPI_Send(B->entry[i],b,MPI_DOUBLE,myid-int_pow(2,k-1),7,MPI_COMM_WORLD);
-			}
-			for(i=0;i<b;i++)
-			{
-				//printf("My id is %d, k is %d and i is %d\n",myid,k,i);
-				MPI_Recv(B->entry[i], b, MPI_DOUBLE, myid-int_pow(2,k-1), 8, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			}
-
-		}
-		//break;
-	}
-
-
-}
-
 void tsqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
 {
 	int s,e;
@@ -95,8 +43,9 @@ void tsqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
 				}
 				Q[i] = CreateNullMatrix(2*b,b);
 				R[i] = CreateNullMatrix(2*b,b);
+			
 				mod_hhorth(&R[i-1],&Q[i],&R[i]);
-				FreeMatrix(&R[i-1]);			
+				FreeMatrix(&R[i-1]);
 			}
 			else if (i == mylevel)
 			{
@@ -110,6 +59,7 @@ void tsqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
 	
 	DenseMatrix B;
 	B = CreateNullMatrix(1+e-s,b);
+//	if (myid == 0 || myid == 2){printf("myid is %d and I'm ok\n",myid);}
 	QtA(Q, &B, &W, myid, comm_steps, mylevel, b);
 	if (myid == 0)
 	{
@@ -125,9 +75,54 @@ void tsqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
 			//memset(&Rfin->entry[i][s],0.0,sizeof(double)*(1+e-s));
 		}
 	}
+	FreeMatrix(&B);
 //	if (myid ==0){PrintMatrix(Rfin);}
 }
 
+void QtA(DenseMatrix Q[],DenseMatrix* B, DenseMatrix *W, int myid, int comm_steps, int mylevel, int b)
+{
+	
+	int i,k;
+	ApplyQT(B,&Q[0],W);
+	
+	
+	DenseMatrix Bbar = CreateNullMatrix(2*b,b);
+	for ( i=0;i<b;i++)
+	{
+		memcpy(Bbar.entry[i],B->entry[i],sizeof(double)*b);
+	}
+	
+	for (k=1; k<=comm_steps; k++ )
+	{
+		if (k < mylevel)
+		{
+			for(i=0;i<b;i++)
+			{
+				MPI_Recv(&Bbar.entry[i][b], b, MPI_DOUBLE, myid+int_pow(2,k-1), 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+			ApplyQT(&Bbar,&Q[k],&Bbar);			
+			for(i=0;i<b;i++)
+			{
+
+				MPI_Send(&Bbar.entry[i][b], b, MPI_DOUBLE, myid+int_pow(2,k-1), 8, MPI_COMM_WORLD);
+				memcpy(B->entry[i],Bbar.entry[i],sizeof(double)*b);
+			}
+		}
+		else if (k == mylevel)
+		{
+			for(i=0;i<b;i++)
+			{
+				//printf("My id is %d, k is %d and i is %d\n",myid,k,i);
+				MPI_Send(B->entry[i],b,MPI_DOUBLE,myid-int_pow(2,k-1),7,MPI_COMM_WORLD);
+			}
+			for(i=0;i<b;i++)
+			{
+				//printf("My id is %d, k is %d and i is %d\n",myid,k,i);
+				MPI_Recv(B->entry[i], b, MPI_DOUBLE, myid-int_pow(2,k-1), 8, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		}
+	}
+}
 
 int int_pow(int base, int exp)
 {
