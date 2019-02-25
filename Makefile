@@ -1,6 +1,6 @@
 
 CC = mpicc
-CFLAGS = -Wall
+CFLAGS = -Wall 
 
 objects = caqr.o main.o tsqr.o parallelsetup.o hhorth.o
 
