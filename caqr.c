@@ -7,18 +7,22 @@
 
 #include <mpi.h>
 
-void caqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
+void caqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b, MPI_Comm comm, int nbrup, int nbrdown)
 /* Function to apply communication avoiding qr factorization to a matrix stored
 in Rfin across nprocs number of processors. The values of Rfin will be updated
 with the values of R for the R factorization. */
 {
 	int s,e;
 	int i,j,k,p;
-	int os, oe;
 
 	//Calculation of how far into communication step the processor must go:
 	int comm_steps = int_log2(nprocs);
 	int mylevel = my_steps(nprocs, myid, comm_steps);
+
+
+	MPI_Datatype row;
+	MPI_Type_vector(Rfin->nColumns, 1, Rfin->nColumns, MPI_DOUBLE, &row);
+	MPI_Type_commit(&row);
 
 	// Matrices declared for implicit calculation of Q and R.
 	DenseMatrix Q[mylevel];
@@ -51,7 +55,7 @@ with the values of R for the R factorization. */
 			{
 				for(k=0;k<b;k++)
 				{
-					MPI_Recv(&R[i-1].entry[k][b], k+1, MPI_DOUBLE, myid+int_pow(2,i-1), myid+int_pow(2,i-1), MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Recv(&R[i-1].entry[k][b], k+1, MPI_DOUBLE, myid+int_pow(2,i-1), myid+int_pow(2,i-1), comm, MPI_STATUS_IGNORE);
 				}
 				Q[i] = CreateNullMatrix(2*b,b);
 				R[i] = CreateNullMatrix(2*b,b);
@@ -62,7 +66,7 @@ with the values of R for the R factorization. */
 			{
 				for(k=0;k<b;k++)
 				{
-					MPI_Send(R[i-1].entry[k],k+1,MPI_DOUBLE,myid-int_pow(2,i-1),myid,MPI_COMM_WORLD);
+					MPI_Send(R[i-1].entry[k],k+1,MPI_DOUBLE,myid-int_pow(2,i-1),myid,comm);
 				}
 				FreeMatrix(&R[i-1]);
 			}
@@ -75,7 +79,7 @@ with the values of R for the R factorization. */
 			{
 				memcpy(W.entry[i],&Rfin->entry[(p*b)+i][s],sizeof(double)*(1+e-s));
 			}
-			caQtA(Q, &W, myid, comm_steps, mylevel, b, j,s);
+			caQtA(Q, &W, myid, comm_steps, mylevel, b, j,s, comm);
 			for (i = 0; i<b; i++)
 			{
 				memcpy(&Rfin->entry[(p*b)+i][s],W.entry[i],sizeof(double)*W.nRows);
@@ -94,18 +98,11 @@ with the values of R for the R factorization. */
 
 		// Needs to be changed, at the moment exchanges all updates of Rfin,
 		// Should only do necessary ones.
-		for (p=0;p<nprocs;p++)
-		{
-			os = s;
-			oe = e;
-			MPI_Bcast(&os, 1, MPI_INT, p,MPI_COMM_WORLD);
-			MPI_Bcast(&oe, 1, MPI_INT, p,MPI_COMM_WORLD);
-			for (k=0;k<Rfin->nColumns;k++)
-			{
-				MPI_Bcast(&Rfin->entry[k][os], 1+oe-os, MPI_DOUBLE, p,MPI_COMM_WORLD);
-			}
-		}
 
+		for (p=0;p<b/nprocs;p++){
+				MPI_Sendrecv(&Rfin->entry[0][s+p], 1, row, nbrup, 0, &Rfin->entry[0][e+p], 1, row, nbrdown, 0, comm, MPI_STATUS_IGNORE);
+
+		}
 
 		// The last dynamically allocated memory freed before finish of iteration.
 		for (i = 0; i < mylevel; i++)
@@ -129,7 +126,7 @@ with the values of R for the R factorization. */
 
 
 
-void caQtA(DenseMatrix Q[], DenseMatrix *W, int myid, int comm_steps,int mylevel, int b, int j, int s)
+void caQtA(DenseMatrix Q[], DenseMatrix *W, int myid, int comm_steps,int mylevel, int b, int j, int s, MPI_Comm comm)
 /* Function for applying implicitly stored Q^T across trailing matrix for
 communication avoiding qr factorization. */
 {
@@ -155,24 +152,24 @@ communication avoiding qr factorization. */
 		{
 			for(i=0;i<b;i++)
 			{
-				MPI_Recv(&Bbar.entry[i][b], b, MPI_DOUBLE, myid+int_pow(2,k-1), 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Recv(&Bbar.entry[i][b], b, MPI_DOUBLE, myid+int_pow(2,k-1), 7, comm, MPI_STATUS_IGNORE);
 			}
 			ApplyQT(&Bbar,&Q[k],&Bbar);
 			for(i=0;i<b;i++)
 			{
 				memcpy(W->entry[i],Bbar.entry[i],sizeof(double)*b);
-				MPI_Send(&Bbar.entry[i][b], b, MPI_DOUBLE, myid+int_pow(2,k-1), 8, MPI_COMM_WORLD);
+				MPI_Send(&Bbar.entry[i][b], b, MPI_DOUBLE, myid+int_pow(2,k-1), 8, comm);
 			}
 		}
 		else if (k == mylevel)
 		{
 			for(i=0;i<b;i++)
 			{
-				MPI_Send(W->entry[i],b,MPI_DOUBLE,myid-int_pow(2,k-1),7,MPI_COMM_WORLD);
+				MPI_Send(W->entry[i],b,MPI_DOUBLE,myid-int_pow(2,k-1),7,comm);
 			}
 			for(i=0;i<b;i++)
 			{
-				MPI_Recv(W->entry[i], b, MPI_DOUBLE, myid-int_pow(2,k-1), 8, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Recv(W->entry[i], b, MPI_DOUBLE, myid-int_pow(2,k-1), 8, comm, MPI_STATUS_IGNORE);
 			}
 		}
 	}
