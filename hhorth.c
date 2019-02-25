@@ -50,13 +50,13 @@ zeros above the diagonal. */
   // Storage space calculated
 
   DenseMatrix A;
-	int sum = m*(n-m);
+  int sum = m*(n-m);
   int i;
   for ( i = 0; i < m; i++) {
     sum += i;
   }
-	A.nRows = n;
-	A.nColumns = m;
+  A.nRows = n;
+  A.nColumns = m;
   A.entry = malloc(sizeof(double*)*n);
   A.data_ = malloc(sizeof(double)*sum);
 
