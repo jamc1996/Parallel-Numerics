@@ -12,7 +12,7 @@ void caqr(DenseMatrix* Rfin, int nprocs, int myid, int b, MPI_Comm comm, int nbr
 in Rfin across nprocs number of processors. The values of Rfin will be updated
 with the values of R for the R factorization. */
 {
-	int s,e;
+	int s,e, old_s, old_e;
 	int i,j,k,p;
 	
 	//Calculation of how far into communication step the processor must go:
@@ -30,9 +30,33 @@ with the values of R for the R factorization. */
 
 	for(j=0; j<Rfin->nColumns/b; j++)
 	{
-
 		//Each processor takes it's chunk of matrix.
 		decomp1d(j*b, Rfin->nRows, nprocs, myid, &s, &e);
+
+		if (j>0){
+			if (myid%2 == 0){
+				for (p=old_e+1;p<=e;p++)
+				{
+					MPI_Recv(&Rfin->entry[0][p], 1, row, nbrdown, 2, comm, MPI_STATUS_IGNORE);
+				//	printf("Myid is %d and I received at %d.\n",myid,p);
+				}
+				for (p=old_s;p<s;p++)
+				{
+					MPI_Send(&Rfin->entry[0][p], 1, row, nbrup, 0, comm);			
+				}
+			}
+			else
+			{
+				for (p=old_s;p<s;p++)
+				{
+					MPI_Send(&Rfin->entry[0][p], 1, row, nbrup, 2, comm);
+				}
+				for (p=old_e+1;p<=e;p++)
+				{
+					MPI_Recv(&Rfin->entry[0][p], 1, row, nbrdown, 0, comm, MPI_STATUS_IGNORE);
+				}
+			}
+		}
 
 	// I created a deep copy matrix W so that each block would be contiguously
 	// stored in memory. With more time I would test if this was worthwhile or if
@@ -98,10 +122,9 @@ with the values of R for the R factorization. */
 
 		// Needs to be changed, at the moment exchanges all updates of Rfin,
 		// Should only do necessary ones.
-
-		for (p=0;p<(b/nprocs)+(nprocs);p++){
-				MPI_Sendrecv(&Rfin->entry[0][s+p], 1, row, nbrup, 0, &Rfin->entry[0][e+1+p], 1, row, nbrdown, 0, comm, MPI_STATUS_IGNORE);
-		}
+		old_s = s;
+		old_e = e;
+		
 
 		// The last dynamically allocated memory freed before finish of iteration.
 		for (i = 0; i < mylevel; i++)
