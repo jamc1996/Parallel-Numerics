@@ -1,5 +1,14 @@
 #include "parallelsetup.h"
 
+/*	parallelsetup.c -- program to help with matrix division in parallel execution.
+ *
+ *	Author: John Cormican
+ *
+ *	Purpouse: To properly load balance a parallel problem.
+ *
+ *	Usage: called by caqr to divide matrix as necessary
+ *
+ * */
 
 // This function was originally written for 5611, and slightly editted for this assignment.
 

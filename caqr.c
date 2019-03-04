@@ -7,6 +7,17 @@
 
 #include <mpi.h>
 
+/*	caqr.c -- program for implementing communication avoiding qr factorization on nxm matrix
+ *
+ * 	Author: John Cormican
+ *
+ * 	Purpose: To perform qr factorization across multiple processors.
+ *
+ * 	Usage: function caqr() should be called from some main.c
+ *
+ * */
+
+
 void caqr(DenseMatrix* Rfin, int nprocs, int myid, int b, MPI_Comm comm, int nbrup, int nbrdown)
 /* Function to apply communication avoiding qr factorization to a matrix stored
 in Rfin across nprocs number of processors. The values of Rfin will be updated
@@ -125,6 +136,7 @@ with the values of R for the R factorization. */
 		old_s = s;
 		old_e = e;
 		
+		
 
 		// The last dynamically allocated memory freed before finish of iteration.
 		for (i = 0; i < mylevel; i++)
@@ -134,15 +146,6 @@ with the values of R for the R factorization. */
 		FreeMatrix(&W);
 	}
 
-	// Can be uncommented for error checking:
-	// if (myid == 0)
-	// {
-	// 	printf("Rfin[10][%d] = %lf\n",0,Rfin->entry[0][0]);
-	// 	for (i=0;i< 15;i++){
-	// 		for (j=0; j< 15; j++){
-	// 			printf("  %lf  ",Rfin->entry[j][i]);
-	// 		} printf("\n");}
-	// }
 }
 
 

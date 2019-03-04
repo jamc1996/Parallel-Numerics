@@ -1,0 +1,23 @@
+
+On 4 processors, communication avoiding qr factorization of a 10000 x 5000 matrix, took 261.580000 seconds.
+
+
+On 4 processors, communication avoiding qr factorization of a 10000 x 5000 matrix, took 262.170000 seconds.
+
+
+On 4 processors, communication avoiding qr factorization of a 10000 x 5000 matrix, took 300.440000 seconds.
+
+
+On 4 processors, communication avoiding qr factorization of a 10000 x 5000 matrix, took 441.160000 seconds.
+
+
+On 8 processors, using block size 10, communication avoiding qr factorization of a 10000 x 5000 matrix, took 149.840000 seconds.
+
+On 8 processors, using block size 50, communication avoiding qr factorization of a 10000 x 5000 matrix, took 146.490000 seconds.
+
+
+On 8 processors, using block size 100, communication avoiding qr factorization of a 10000 x 5000 matrix, took 150.700000 seconds.
+
+
+On 8 processors, using block size 500, communication avoiding qr factorization of a 10000 x 5000 matrix, took 186.450000 seconds.
+

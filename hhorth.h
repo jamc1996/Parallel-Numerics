@@ -1,6 +1,13 @@
 #ifndef HHORTH_H
 #define HHORTH_H
 
+/*	hhorth.h -- header file for hhorth.c 
+ *
+ *	Author: John Cormican
+ *
+ * */
+
+
 #include "dense.h"
 
 #include <stdio.h>

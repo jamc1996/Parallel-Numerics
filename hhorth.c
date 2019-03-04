@@ -4,7 +4,14 @@
 
 #include "hhorth.h"
 
-
+/*	hhorth.c -- program to provide the fucntions needed for orthogonalization of DenseMatrix
+ *
+ *	Author: John Cormican
+ *
+ *	Purpose: To allow tsqr and caqr factorization to be implemented
+ *
+ *	Usage: Function called by tsqr.c and caqr.c functions as required.
+ * */
 
 
 void hhorth(DenseMatrix *A, DenseMatrix *Q, DenseMatrix *R)
@@ -135,6 +142,7 @@ Updates the values of dense matrices Q and R. */
 }
 
 void ApplyQT(DenseMatrix* B,DenseMatrix* Q,DenseMatrix* W)
+/* Function for finding the Q^T times a matrix B*/
 {
 	int i,j;
 	memcpy(B->data_,W->data_,sizeof(double)*B->nRows*B->nColumns);
@@ -193,7 +201,9 @@ the omega_k vectors. */
   }
 }
 
-double two_norm(Vector Aj,int m){
+double two_norm(Vector Aj,int m)
+/* Function to find the two-norm of a vector of length m.*/
+{
   int i;
   double sum = 0;
   for ( i = 0; i < m; i++) {
@@ -203,13 +213,14 @@ double two_norm(Vector Aj,int m){
 }
 
 DenseMatrix CreateNullMatrix(int n, int m)
+/* Fuction to declare and allocate an empty nxm DenseMatrix*/
 {
   DenseMatrix A;
   int j;
   A.nRows = n;
   A.nColumns = m;
   A.data_ = malloc(sizeof(double)*n*m);//all entries stored in t.data_.
-  memset(A.data_,0.0,sizeof(double)*n*m);
+  //memset(A.data_,0.0,sizeof(double)*n*m);
   A.entry = malloc(sizeof(double*)*m);//space allocated for m columns.
   for (j=0;j<m;j++)
   {
@@ -219,6 +230,7 @@ DenseMatrix CreateNullMatrix(int n, int m)
 }
 
 void SetToRandom(DenseMatrix *A)
+/* Sets all entires in a dense matrix to a random value on [-2.2] */
 {
   int i;
   for (i=0;i<A->nRows*A->nColumns ;i++)
@@ -228,13 +240,17 @@ void SetToRandom(DenseMatrix *A)
 }
 
 void FreeMatrix(DenseMatrix *A)
+/* Function to free dynamically allocated memory of a dense matrix*/
 {
   free(A->data_);
   free(A->entry);
 }
 
 
-void PrintMatrix(DenseMatrix *A){
+void PrintMatrix(DenseMatrix *A)
+/* Not used in final program but allows for matrix printing 
+ * for error checking of small matrices */
+{
   int i,j;
   printf("\n" );
   for ( i = 0; i < A->nRows; i++) {

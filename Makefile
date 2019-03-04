@@ -1,6 +1,8 @@
 
+# Makefile for parallel qr factorization methods
+
 CC = mpicc
-CFLAGS = -Wall 
+CFLAGS = -Wall -pg 
 
 objects = caqr.o main.o tsqr.o parallelsetup.o hhorth.o
 
@@ -37,4 +39,4 @@ clean:
 test: catsqr
 	module load cports openmpi; \
 	mpiexec -n 4 catsqr
-
+	

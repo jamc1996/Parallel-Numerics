@@ -8,7 +8,17 @@
 #include "dense.h"
 #include "tsqr.h"
 
-void tsqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
+/*	tsqr.c -- program for implementing tall skinny qr factorization.
+ *
+ *	Author: John Cormican
+ *
+ *	Purpose: To implement tall skinny qr factorization leading to caqr in other file
+ *
+ *	Usage: call tsqr from main.c
+ * */
+
+void tsqr(DenseMatrix* Rfin, int nprocs, int myid, int b)
+/* Performs tall skinny factorization of an n*b matrix. */
 {
 	int s,e;
 	int i,k;
@@ -59,7 +69,9 @@ void tsqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
 	
 	DenseMatrix B;
 	B = CreateNullMatrix(1+e-s,b);
-//	if (myid == 0 || myid == 2){printf("myid is %d and I'm ok\n",myid);}
+
+	//Rfin can be updated either directly as calculated or test implementation by applying Q^T
+	
 	QtA(Q, &B, &W, myid, comm_steps, mylevel, b);
 	if (myid == 0)
 	{
@@ -76,10 +88,10 @@ void tsqr(DenseMatrix* Rfin, DenseMatrix *Qfin, int nprocs, int myid, int b)
 		}
 	}
 	FreeMatrix(&B);
-//	if (myid ==0){PrintMatrix(Rfin);}
 }
 
 void QtA(DenseMatrix Q[],DenseMatrix* B, DenseMatrix *W, int myid, int comm_steps, int mylevel, int b)
+/* Function to apply implicitly stored Q transpose to a matrix*/
 {
 	
 	int i,k;
@@ -125,6 +137,7 @@ void QtA(DenseMatrix Q[],DenseMatrix* B, DenseMatrix *W, int myid, int comm_step
 }
 
 int int_pow(int base, int exp)
+/* Function to allow raising integers to a power*/
 {
 	int i, res = 1;
 	for (i=0;i<exp;i++)
@@ -135,6 +148,7 @@ int int_pow(int base, int exp)
 }
 
 int my_steps(int nprocs, int myid, int comm_steps)
+/* Function to calculate the number of communication steps a processor must go through */
 {
 	int i, count = 1;
 	for (i=1;i<comm_steps+1;i++)
@@ -149,6 +163,7 @@ int my_steps(int nprocs, int myid, int comm_steps)
 }
 
 int int_log2(int nprocs)
+/* Function implement log to base 2 times some integer*/
 {
 	int count = 0;
 	while (nprocs>1)
