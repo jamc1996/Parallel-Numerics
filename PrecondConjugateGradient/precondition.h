@@ -1,18 +1,14 @@
 #ifndef PRECONDITION_H
 #define PRECONDITION_H
+
+#include "structs.h"
+
 #include "problemsetup.h"
-typedef struct
-{
-	int nRows;
-	int nEntries;
-	int *rowInd;
-	int *colInd;
-	double *entries;
+#include "parallelsetup.h"
+#include "haloswaps.h"
 
-} SparseMatrix;
 
-double lower_A_times_xj(Grid* grid, int x, int y);
-void allocate_L(SparseMatrix *L, Grid *x);
-void fill_L(SparseMatrix *L, Grid *x);
 void rb_gauss_seidel(Grid* p, Grid* r);
+void par_rb_gauss_seidel(Block* p, Block* r, MPI_Comm comm, MPI_Datatype vec);
+
 #endif

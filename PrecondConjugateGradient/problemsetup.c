@@ -1,18 +1,26 @@
 #include "problemsetup.h"
 
-void alloc_serial_grid(Grid *grid, int size)
-{
-	// Length of each row is number of grid points + ghost processors to left and right
+/*		problemsetup.c -- program with methods for setting up laplace problem in form Ax = b.
+ *
+ *		Author: John Cormican
+ *
+ *		Purpouse: To set up the problem for conjugate gradient to be applied
+ *
+ *		Usage: Allocation and initialization methods called from main.c
+ */
 
+void alloc_serial_grid(Grid *grid, int size)
+/* Function to allocate grid of the given shape. */
+{
 	int i;	
+
+	// Shape of grid described:
+	grid->size = size;
 	grid->num_sections = 4;
 	grid->len[0] = (size*3)-1;
 	grid->len[1] = size;
 	grid->len[2] = size*2;
 	grid->len[3] = size*2;
- 
-
-	grid->size = size;
 
 	grid->total_size = size*(grid->len[0]+grid->len[1]+grid->len[2])+(size-1)*(grid->len[3]);
 
@@ -20,7 +28,8 @@ void alloc_serial_grid(Grid *grid, int size)
 	grid->start[1] = grid->size*grid->len[0];
 	grid->start[2] = grid->start[1] + (grid->size*grid->len[1]);
 	grid->start[3] = grid->start[2] + (grid->size*grid->len[2]);
-	
+
+	// Memory allocated for storing the data points	
 	grid->data1d = malloc(sizeof(double)*grid->total_size);
 	grid->data2d = malloc(sizeof(double*)*((size*4)-1));
 	for ( i=0; i<size; i++)
@@ -42,12 +51,10 @@ void alloc_serial_grid(Grid *grid, int size)
 }
 
 void define_b(Grid* x, Grid* b)
-/* Define the b vector*/
+/* Define the b vector in the matrix equation Ax = b. */
 {
 	int i,j,k,counter=0;
-	//A->nRows = x->total_size;
-	//A->rowInd = malloc(sizeof(int)*A->nRows);
-	//A->nEntries = 0;
+	// Vector is 0 except for the points beside the phi = 1 boundary.
 	for (i=0; i<4; i++)
 	{
 		for (j=0; j<x->size; j++)
@@ -58,47 +65,13 @@ void define_b(Grid* x, Grid* b)
 			}
 			for (k=0; k<x->len[i]; k++)
 			{
-				//A->rowInd[counter] = A->nEntries;
 				b->data1d[counter] = 0.0;
-				//A->nEntries += 5;
-				if(k==0)
-				{
-					//b->data1d[counter]+=x->data2d[(x->size*i)+j][k+1];
-					//A->nEntries--;
-				}
 				if(k==x->len[i]-1)
 				{
 					if(i==0)
 					{
 						b->data1d[counter]+=1.0;
-						//A->nEntries--;
 					}
-					else
-					{
-						//b->data1d[counter]+=x->data2d[(x->size*i)+j][k-1];
-						//A->nEntries--;
-					}
-				}
-				if(j==0)
-				{
-					if(i==0)
-					{
-						//b->data1d[counter]+= x->data2d[(i*x->size)+j+1][k];
-						//A->nEntries--;
-					}
-					else if(k >= x->len[i-1])
-					{
-						//b->data1d[counter]+= x->data2d[(i*x->size)+j+1][k];
-						//A->nEntries--;
-					} 
-				}
-				if(j==x->size-1)
-				{
-					if(k >= x->len[i+1])
-					{
-						//b->data1d[counter]+= x->data2d[(i*x->size)+j-1][k];
-						//A->nEntries--;
-					} 
 				}
 				counter++;
 			}
@@ -107,6 +80,7 @@ void define_b(Grid* x, Grid* b)
 }
 
 double nbr_up(Grid *grid, int x, int y)
+/* Function to find a point's neighbour above. */
 {
 	if(x%grid->size == 0 && x/grid->size == 0)
 	{
@@ -123,6 +97,7 @@ double nbr_up(Grid *grid, int x, int y)
 }
 
 double nbr_down(Grid *grid, int x, int y)
+/* Function to find a point's neighbour below. */
 {
 	int i = x/grid->size;
 	if (x==(4*grid->size)-2)
@@ -140,6 +115,7 @@ double nbr_down(Grid *grid, int x, int y)
 }
 
 double nbr_left(Grid *grid, int x, int y)
+/* Function to find a point's neighbour to the left. */
 {
 	if(y==0)
 	{
@@ -149,6 +125,7 @@ double nbr_left(Grid *grid, int x, int y)
 }
 
 double nbr_right(Grid *grid, int x, int y)
+/* Function to find a point's neighbour to the right. */
 {
 	int i = x/grid->size;
 	if (i==0)
@@ -166,6 +143,7 @@ double nbr_right(Grid *grid, int x, int y)
 }
 
 void fill_grid(Grid *grid)
+/* Function to initialize the phi vector to zero throughout the grid */
 {
 	int i;
 
@@ -176,6 +154,8 @@ void fill_grid(Grid *grid)
 }
 
 void print_full_grid(Grid* grid)
+/* Function to print out the full grid. 
+ * Helpful for error checking for small sizes. */
 {
 	int i,j,k;
 	for (i=0; i<4; i++)
@@ -211,8 +191,8 @@ void print_full_grid(Grid* grid)
 	printf("\n");
 }
 
-
 void free_grid(Grid *grid)
+/* Function to free the dynamically allocated memory in the grid. */
 {	
 	free(grid->data2d);
 	free(grid->data1d);
